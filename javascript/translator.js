@@ -29,3 +29,98 @@ const brailleMap = {
   "(": "O.OO..",  // Left parenthesis
   ")": "O..OOO",  // Right parenthesis
 };
+
+
+// get the input string from the command-line and join into a single string
+const input = process.argv.slice(2).join(" ");
+
+// Check if input is braille
+const isBraille = (input) => {
+  return /^[O. ]+$/.test(input);
+}
+
+
+// convert to braille
+const toBraille = (text) => {
+  let result = "";
+  // Track whether we are in number mode
+  let isNumber = false;
+
+  for (let char of text) {
+      if (char === " ") {
+          result += brailleMap[" "];  // Add Braille space
+          isNumber = false;  // Reset number mode after space
+      } else if (char >= 'A' && char <= 'Z') {
+          result += brailleMap["capital"];  // Add capital marker
+          result += brailleMap[char.toLowerCase()];
+          isNumber = false;  // Reset number mode after a capital letter
+      } else if (char >= '0' && char <= '9') {
+          if (!isNumber) {
+              result += brailleMap["number"];  // Add number marker only once
+              isNumber = true;  // Enter number mode
+          }
+          result += brailleMap[char];  // Convert the digit to Braille
+      } else if (brailleMap[char]) {
+          result += brailleMap[char];  // Convert other characters (punctuation, etc.)
+          isNumber = false;  // Reset number mode if a non-number is encountered
+      } else {
+          console.error(`Character "${char}" not found in brailleMap`);
+      }
+  }
+
+  return result;
+}
+
+
+
+
+const toEnglish = (braille) => {
+  let result = "";
+  let isCapital = false;
+  let isNumber = false;
+
+  // Split Braille into chunks of 6 dots
+  let brailleChars = braille.match(/.{1,6}/g);
+
+  for (let char of brailleChars) {
+      if (char === brailleMap["capital"]) {
+          isCapital = true;  // Capitalize next letter
+      } else if (char === brailleMap["number"]) {
+          isNumber = true;  // Numbers follow
+      } else if (char === brailleMap[" "]) {
+          result += " ";  // Add space
+          isNumber = false;  // Reset number mode after space
+      } else {
+          let letter;
+          if (isNumber) {
+              // Search for numbers only
+              letter = Object.keys(brailleMap).find(key => brailleMap[key] === char && !isNaN(key));
+              isNumber = false;  // Reset number mode after each number
+          } else {
+              // Search for letters
+              letter = Object.keys(brailleMap).find(key => brailleMap[key] === char && isNaN(key));
+          }
+
+          if (isCapital && letter) {
+              letter = letter.toUpperCase();
+              isCapital = false;  // Reset capital mode
+          }
+
+          if (letter) {
+              result += letter;
+          } else {
+              console.error(`Braille pattern "${char}" not found`);
+          }
+      }
+  }
+
+  return result;
+}
+
+
+// check if the input is Braille and run the appropriate function
+if (isBraille(input)) {
+    console.log(toEnglish(input));
+} else {
+    console.log(toBraille(input));
+}
